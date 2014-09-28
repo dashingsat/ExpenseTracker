@@ -1,0 +1,21 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+
+GET         /                                 controllers.Application.index
+
+GET         /assets/*file                     controllers.Assets.at(path = "/public",file)
+
+GET         /expense/get                      controllers.Application.getExpense
+
+POST        /expense/lodge                    controllers.Application.lodgeExpense
+
+GET         /expense/test                     controllers.Application.testGremlin
+
+POST        /expense/auth/authenticate        controllers.Authentication.authenticate
+
+POST        /expense/auth/register            controllers.Authentication.register
+
+POST        /expense/auth/logout              controllers.Authentication.logOut
