@@ -11,7 +11,7 @@ object Ananlytics extends Controller{
 
   def ExpensesBeyondCertainLimit(boundryAmount : Double) = isUserConnected(
      Action(BodyParsers.parse.json){
-        implicit  request => Ok
+        implicit  request => Ok("data")
 
      }
 

@@ -41,7 +41,7 @@ case class Expense(amount: Double, dateTime: String, category: String, subCatego
 
           getCategoryVertex(categoryName, subCategory) match {
             case Some(categoryNode) => {
-              Logger.info("Got category")
+
               expenseNode.addEdge("for", categoryNode)
               Some(true)
             }

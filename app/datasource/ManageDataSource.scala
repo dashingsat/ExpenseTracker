@@ -1,5 +1,6 @@
 package datasource
 
+import com.orientechnologies.orient.core.exception.OConcurrentModificationException
 import com.tinkerpop.blueprints.impls.orient.{OrientGraphNoTx, OrientGraph, OrientGraphFactory}
 import play.api.Logger
 
@@ -12,6 +13,7 @@ import play.api.Logger
 object ManageDataSource {
 
   var factory : Option[OrientGraphFactory] = None
+  var factoryNonTransactional : Option[OrientGraphFactory] = None
 
   def tx (body : => Unit)(implicit graph:OrientGraph) : Boolean = {
     try{
@@ -22,11 +24,15 @@ object ManageDataSource {
       Logger.info("Commit Successful:")
       true
     } catch{
-      case e:Exception =>{
-        Logger.info("Failed to commit transaction due to error :"+ e.getMessage)
+
+       case e: OConcurrentModificationException => Logger.info("Suppressing the error for time being. It will be fixed in the release version of Orient"); true
+       case e:Exception =>{
+
+        Logger.info("Failed to commit transaction due to error :"+ e.getClass+":" + e.getMessage)
         graph.rollback
         false
         }
+
     }
     finally {
       graph.shutdown()
@@ -35,7 +41,7 @@ object ManageDataSource {
   }
 
 
-  def instantiate(uri:String, uriType:String) : Option[OrientGraphFactory]  = {
+  def instantiate(uri:String, uriType:String) : (Option[OrientGraphFactory], Option[OrientGraphFactory])  = {
 
     factory  = uriType match {
 
@@ -45,7 +51,15 @@ object ManageDataSource {
 
     }
 
-    factory
+    factoryNonTransactional = uriType match {
+
+      case "local" =>  Some(new OrientGraphFactory("plocal:"+uri).setTransactional(false).setupPool(1,50))
+      case "remote" =>  Some(new OrientGraphFactory("remote:"+uri).setTransactional(false).setupPool(1,50))
+      case _ => None
+
+    }
+
+    (factory,factoryNonTransactional)
   }
 
   def getInstance : Option[OrientGraph] = factory match {
@@ -53,8 +67,8 @@ object ManageDataSource {
     case _ => None
   }
 
-  def getNonTransactionalInstance : Option[OrientGraphNoTx] = factory match {
-    case Some(factory) => Some(factory.getNoTx)
+  def getNonTransactionalInstance : Option[OrientGraphNoTx] = factoryNonTransactional match {
+    case Some(factoryNonTransactional) => Some(factoryNonTransactional.getNoTx)
     case _ => None
   }
 
@@ -64,6 +78,11 @@ object ManageDataSource {
        case Some(factory) => factory.close()
        case None => Logger.info("There is no factory to begin with")
      }
+
+    factoryNonTransactional match {
+      case Some(factory) => factory.close()
+      case None => Logger.info("There is no factory to begin with")
+    }
   }
 
 }
